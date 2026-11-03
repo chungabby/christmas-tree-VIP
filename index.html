@@ -93,6 +93,8 @@ p,h1,h2,h3,ul{margin:0}
 .label{font-size:max(12px,calc(16.45*var(--u)));letter-spacing:var(--track);line-height:1.2;display:flex;align-items:baseline;gap:calc(14*var(--u));flex-wrap:wrap}
 .label .ico{letter-spacing:0;font-size:.95em;margin-right:calc(-8*var(--u))}
 .label .desc .cs::before{content:"（"}.label .desc .cs::after{content:"）"}
+/* colour + scent always stays on the label's line; fitDesc() shrinks it a little when a long scent name would wrap */
+#colorLabel,#layerView #colorLabel{flex-wrap:nowrap;white-space:nowrap}#colorLabel .desc{white-space:nowrap}
 .label .desc{font-weight:400;font-size:max(11px,calc(13.5*var(--u)));letter-spacing:.03em;white-space:nowrap;transition:color .3s}
 .sec{margin-top:calc(20*var(--u))}
 #layerView .sec:first-of-type{margin-top:0}
@@ -334,7 +336,7 @@ p,h1,h2,h3,ul{margin:0}
         <div class="swap" id="swap">
           <div id="layerView">
             <div class="sec">
-              <div class="label"><span class="ico" aria-hidden="true">🕯️</span>蠟塊顏色與香氣 <span class="desc" id="colorDesc"><span class="cn"></span><span class="cs"></span></span></div>
+              <div class="label" id="colorLabel"><span class="ico" aria-hidden="true">🕯️</span>蠟塊顏色與香氣 <span class="desc" id="colorDesc"><span class="cn"></span><span class="cs"></span></span></div>
               <div class="indent"><div class="swatches" id="colors" role="group" aria-label="蠟塊顏色與香氣"></div></div>
             </div>
             <div class="sec">
@@ -414,15 +416,15 @@ p,h1,h2,h3,ul{margin:0}
 /* ================= product data — edit here ================= */
 // 10 wax colours (hex from the PDF). n = colour name, scent = matching fragrance (empty = not provided yet)
 const WAX=[
-  {id:'410b14',h:'#410b14',n:'聖誕紅',scent:'花香玫瑰'},
-  {id:'494934',h:'#494934',n:'諾貝松綠',scent:'木質岩蘭草'},
-  {id:'9c836c',h:'#9c836c',n:'暖米咖',scent:'木質檀香'},
-  {id:'ffffff',h:'#ffffff',n:'象牙白',scent:'果香黑莓'},
-  {id:'5f452c',h:'#5f452c',n:'胡桃木咖',scent:'木質雪松'},
-  {id:'e2d6c4',h:'#e2d6c4',n:'裸米',scent:'肌膚麝香'},
-  {id:'cdcecd',h:'#cdcecd',n:'卵石灰',scent:'花香白花'},
-  {id:'95aabc',h:'#95aabc',n:'煙灰藍',scent:'木質紙莎草'},
-  {id:'cbe9f4',h:'#cbe9f4',n:'寶寶藍',scent:'中性海洋'}
+  {id:'410b14',h:'#410b14',n:'聖誕紅',scent:'花果調・黑莓與無花果'},
+  {id:'494934',h:'#494934',n:'諾貝松綠',scent:'木質調・皮革與岩蘭草'},
+  {id:'9c836c',h:'#9c836c',n:'暖米咖',scent:'木質調・煙燻檀香'},
+  {id:'ffffff',h:'#ffffff',n:'象牙白',scent:'木質調・溫柔奶香'},
+  {id:'5f452c',h:'#5f452c',n:'胡桃木咖',scent:'木質調・雪松與紅茶'},
+  {id:'e2d6c4',h:'#e2d6c4',n:'裸米',scent:'麝香調・海鹽與亞麻'},
+  {id:'cdcecd',h:'#cdcecd',n:'卵石灰',scent:'麝香調・沐浴皂香'},
+  {id:'95aabc',h:'#95aabc',n:'煙灰藍',scent:'鹽香調・冬日與海'},
+  {id:'cbe9f4',h:'#cbe9f4',n:'寶寶藍',scent:'麝香調・肌膚香'}
 ];
 // 3 splatter colours (hex from the PDF)
 const INK=[{id:'ffffff',h:'#ffffff',n:'白色',s:'白'},{id:'e2d6c4',h:'#e2d6c4',n:'米',s:'米'},{id:'5f452c',h:'#5f452c',n:'咖',s:'咖'}];
@@ -802,9 +804,17 @@ function showSplat(on,anim){
     splatAnim.onfinish=()=>{el.hidden=true;delete el.dataset.leaving;splatAnim.cancel();splatAnim=null};
   }
 }
+function fitDesc(){
+  const l=$('colorLabel'),d=$('colorDesc');if(!l.offsetWidth)return;
+  d.style.fontSize='';d.style.letterSpacing='';l.style.columnGap='';
+  if(l.scrollWidth>l.clientWidth+.5){d.style.letterSpacing='0';l.style.columnGap='6px'} // tighten first
+  let fs=parseFloat(getComputedStyle(d).fontSize);
+  while(l.scrollWidth>l.clientWidth+.5&&fs>9){fs-=.5;d.style.fontSize=fs+'px'}
+}
+addEventListener('resize',()=>{if(step<CARD_STEP)fitDesc()});
 function refreshLayer(changed){
   const st=state[step],L=LAYERS[step],wax=itemOf(WAX,st.c);
-  const d=$('colorDesc');d.querySelector('.cn').textContent=wax.n;d.querySelector('.cs').textContent=wax.scent;d.style.color=lum(wax.h)>.7?'var(--soft)':wax.h;
+  const d=$('colorDesc');d.querySelector('.cn').textContent=wax.n;d.querySelector('.cs').textContent=wax.scent;d.style.color=lum(wax.h)>.7?'var(--soft)':wax.h;fitDesc();
   $('splatDesc').textContent=st.s?itemOf(INK,st.sc).n:'';
   showSplat(st.s,changed);document.querySelector('.seg').classList.toggle('on',st.s);
   $('colors').querySelectorAll('.sw').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===st.c)));
