@@ -469,6 +469,8 @@ function splatter(ctx,W,H,r,n,opts,wrap){
     tries++;
     const u=r(),v=r();let k=1;
     if(opts.body){const px=profX(opts.body.p,v);if(r()>px)continue;k=Math.min(9,opts.kBase/Math.max(px,.06))}
+    if(opts.top){ // like the real candles: splatter lands on the upper part, thinning out towards the base
+      const [lo,hi]=opts.top,t=Math.min(1,Math.max(0,(v-lo)/(hi-lo)));if(r()>.01+.99*Math.pow(t*t*(3-2*t),1.6))continue}
     made++;
     const x=u*W,y=(1-v)*H,roll=r(),s=opts.scale;
     if(roll<.62){const rad=(1+r()*1.6)*s;dot(x,y,rad*k,rad,0)}                       // fine speck
@@ -618,7 +620,7 @@ if(!renderer||!window.THREE){
     }else{
       const hi=(L.engrave?2:1)*TEXQ;cv.width=2048*hi;cv.height=1024*hi;geo=bodyGeo(L.shape);
       const Lm=meridian(L.shape);
-      opts={count:1,scale:hi,body:L.shape,kBase:2048*Lm/(2*Math.PI*L.shape.R*1024)};
+      opts={count:.5,scale:hi,body:L.shape,kBase:2048*Lm/(2*Math.PI*L.shape.R*1024),top:[.5,.8]};
       if(L.engrave)opts.text={lines:L.engrave,kBase:opts.kBase,capPx:.085*cv.height/Lm,maxArcPx:1.45*cv.width/(2*Math.PI*L.shape.R)};
     }
     const tex=new THREE.CanvasTexture(cv);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=maxAniso;
@@ -726,7 +728,7 @@ function drawHand(c,imgs,ox,oy,sc,S){
     o.globalCompositeOperation='source-in';o.fillStyle=hexOf(WAX,st.c);o.fillRect(0,0,off.width,off.height);
     if(st.s){
       const sp=document.createElement('canvas');sp.width=off.width;sp.height=off.height;const q=sp.getContext('2d');
-      q.scale(S,S);q.fillStyle=hexOf(INK,st.sc);splatter(q,w,h,rng(4001+i*97),Math.round(w*h*.0034),{scale:.8},false);
+      q.scale(S,S);q.fillStyle=hexOf(INK,st.sc);splatter(q,w,h,rng(4001+i*97),Math.round(w*h*.0028),{scale:.8,top:[.3,.7]},false);
       q.setTransform(1,0,0,1,0,0);q.globalCompositeOperation='destination-in';q.drawImage(img,0,0,sp.width,sp.height);
       o.globalCompositeOperation='source-over';o.drawImage(sp,0,0);
     }
